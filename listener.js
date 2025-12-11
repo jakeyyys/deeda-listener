@@ -1,4 +1,5 @@
 console.log("🔥 DeeDa EXTERNAL listener loaded");
+window._deeda_debug = { fbq_calls: [] };
 
 // --- Helper: Safe fbq trigger ---
 function safeFbq(eventName, payload) {
