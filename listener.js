@@ -57,16 +57,7 @@ window.addEventListener("message", function(event) {
     });
   }
 
-  // 2️⃣ ADD TO CART / DONATION INTENT
-  if (name === "select_amount") {
-    safeFbq("AddToCart", {
-      step: name,
-      amount: payload.amount || null,
-      currency: payload.currency || "SGD"
-    });
-  }
-
-  // 3️⃣ PURCHASE EVENT
+  // 2️⃣ PURCHASE EVENT
   if (name === "payment_success") {
     safeFbq("Purchase", {
       value: payload.amount || 0,
