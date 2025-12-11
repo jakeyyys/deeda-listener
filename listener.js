@@ -1,37 +1,42 @@
-console.log("🔥 DeeDa EXTERNAL listener loaded via jsDelivr");
+console.log("🔥 DeeDa EXTERNAL listener loaded");
 
 // --- Helper: Safe fbq trigger ---
-function fireFbq(eventName, payload) {
-  // Retry until pixel loads
+function safeFbq(eventName, payload) {
   function tryFire() {
     if (typeof fbq !== "function") {
-      console.log("⚠️ fbq not ready, retrying...");
+      console.log("⚠ fbq not ready, retrying...");
       setTimeout(tryFire, 300);
       return;
     }
-
-    console.log("🔥 FB EVENT SENT:", eventName, payload);
+    console.log("🔥 FB EVENT FIRED:", eventName, payload);
     fbq("track", eventName, payload || {});
   }
-
   tryFire();
 }
 
-// --- Main listener ---
-window.addEventListener("message", function(event) {
-  if (!event.origin || !event.origin.includes("deeda.care")) return;
-
-  console.log("🔥 DeeDa MESSAGE RECEIVED:", event.data);
-
-  var name = event.data.event || null;
-  var type = event.data.type || null;
-  var payload = event.data.extInfo || {};
-  var widget = event.data.widgetNo || null;
-
-  // --- Push to dataLayer for GA4 ---
+// --- Helper: GA4 tracking (if GTM is allowed to push dataLayer) ---
+function fireGA4(eventName, params) {
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({
-    event: "deeda_event",
+    event: eventName,
+    ...params
+  });
+  console.log("📊 GA4 EVENT:", eventName, params);
+}
+
+// --- MAIN LISTENER ---
+window.addEventListener("message", function(event) {
+  if (!event.origin.includes("deeda.care")) return;
+
+  console.log("🔥 DeeDa MESSAGE:", event.data);
+
+  const name = event.data.event;
+  const type = event.data.type;
+  const payload = event.data.extInfo || {};
+  const widget = event.data.widgetNo;
+
+  // Always push into dataLayer (GA4 compatible)
+  fireGA4("deeda_event", {
     deeda_event_name: name,
     deeda_event_type: type,
     deeda_payload: payload,
@@ -39,32 +44,28 @@ window.addEventListener("message", function(event) {
     timestamp: Date.now()
   });
 
-  console.log("🔥 dataLayer PUSHED:", {
-    deeda_event_name: name,
-    deeda_event_type: type
-  });
+  // --- EVENT ROUTING ---
 
-  // --- FIRE META CONVERSION EVENTS RIGHT HERE ---
-  // INITIATE CHECKOUT
+  // 1️⃣ User starts filling in personal info → INITIATE CHECKOUT
   if (name === "enter_personal") {
-    fireFbq("InitiateCheckout", {
+    safeFbq("InitiateCheckout", {
       step: name,
       widgetNo: widget
     });
   }
 
-  // ADD TO CART / DONATION INTENT
+  // 2️⃣ User selects an amount → DONATION INTENT (AddToCart)
   if (name === "select_amount") {
-    fireFbq("AddToCart", {
+    safeFbq("AddToCart", {
       step: name,
       amount: payload.amount || null,
       currency: payload.currency || "SGD"
     });
   }
 
-  // FINAL PURCHASE / DONATION SUCCESS
+  // 3️⃣ Final donation is successful → PURCHASE
   if (name === "payment_success") {
-    fireFbq("Purchase", {
+    safeFbq("Purchase", {
       value: payload.amount || 0,
       currency: payload.currency || "SGD",
       transaction_id: payload.transactionId || ""
