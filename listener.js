@@ -2,8 +2,7 @@ console.log("🔥 DeeDa EXTERNAL listener loaded");
 window._deeda_debug = { fbq_calls: [] };
 
 // --- Helper: Safe fbq trigger ---
-function fireFbq(eventName, payload) {
-  if (!window._deeda_debug) window._deeda_debug = { fbq_calls: [] };
+function safeFbq(eventName, payload) {
   window._deeda_debug.fbq_calls.push({ eventName, payload, ts: Date.now() });
 
   function tryFire() {
@@ -21,7 +20,7 @@ function fireFbq(eventName, payload) {
 }
 
 
-// --- Helper: GA4 tracking (if GTM is allowed to push dataLayer) ---
+// --- Helper: GA4 tracking ---
 function fireGA4(eventName, params) {
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({
@@ -30,6 +29,7 @@ function fireGA4(eventName, params) {
   });
   console.log("📊 GA4 EVENT:", eventName, params);
 }
+
 
 // --- MAIN LISTENER ---
 window.addEventListener("message", function(event) {
@@ -42,7 +42,6 @@ window.addEventListener("message", function(event) {
   const payload = event.data.extInfo || {};
   const widget = event.data.widgetNo;
 
-  // Always push into dataLayer (GA4 compatible)
   fireGA4("deeda_event", {
     deeda_event_name: name,
     deeda_event_type: type,
@@ -51,9 +50,8 @@ window.addEventListener("message", function(event) {
     timestamp: Date.now()
   });
 
-  // --- EVENT ROUTING ---
 
-  // 1️⃣ User starts filling in personal info → INITIATE CHECKOUT
+  // --- EVENT ROUTING ---
   if (name === "enter_personal") {
     safeFbq("InitiateCheckout", {
       step: name,
@@ -61,7 +59,6 @@ window.addEventListener("message", function(event) {
     });
   }
 
-  // 2️⃣ User selects an amount → DONATION INTENT (AddToCart)
   if (name === "select_amount") {
     safeFbq("AddToCart", {
       step: name,
@@ -70,7 +67,6 @@ window.addEventListener("message", function(event) {
     });
   }
 
-  // 3️⃣ Final donation is successful → PURCHASE
   if (name === "payment_success") {
     safeFbq("Purchase", {
       value: payload.amount || 0,
