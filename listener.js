@@ -2,18 +2,24 @@ console.log("🔥 DeeDa EXTERNAL listener loaded");
 window._deeda_debug = { fbq_calls: [] };
 
 // --- Helper: Safe fbq trigger ---
-function safeFbq(eventName, payload) {
+function fireFbq(eventName, payload) {
+  if (!window._deeda_debug) window._deeda_debug = { fbq_calls: [] };
+  window._deeda_debug.fbq_calls.push({ eventName, payload, ts: Date.now() });
+
   function tryFire() {
     if (typeof fbq !== "function") {
       console.log("⚠ fbq not ready, retrying...");
       setTimeout(tryFire, 300);
       return;
     }
+
     console.log("🔥 FB EVENT FIRED:", eventName, payload);
     fbq("track", eventName, payload || {});
   }
+
   tryFire();
 }
+
 
 // --- Helper: GA4 tracking (if GTM is allowed to push dataLayer) ---
 function fireGA4(eventName, params) {
