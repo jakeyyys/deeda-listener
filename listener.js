@@ -1,8 +1,9 @@
 console.log("🔥 DeeDa EXTERNAL listener loaded");
 window._deeda_debug = { fbq_calls: [] };
 
-// --- Helper: Safe fbq trigger ---
+// --- Safe FBQ Wrapper --- //
 function safeFbq(eventName, payload) {
+  if (!window._deeda_debug) window._deeda_debug = { fbq_calls: [] };
   window._deeda_debug.fbq_calls.push({ eventName, payload, ts: Date.now() });
 
   function tryFire() {
@@ -19,8 +20,7 @@ function safeFbq(eventName, payload) {
   tryFire();
 }
 
-
-// --- Helper: GA4 tracking ---
+// --- GA4 Helper --- //
 function fireGA4(eventName, params) {
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({
@@ -30,8 +30,7 @@ function fireGA4(eventName, params) {
   console.log("📊 GA4 EVENT:", eventName, params);
 }
 
-
-// --- MAIN LISTENER ---
+// --- MAIN LISTENER --- //
 window.addEventListener("message", function(event) {
   if (!event.origin.includes("deeda.care")) return;
 
@@ -42,6 +41,7 @@ window.addEventListener("message", function(event) {
   const payload = event.data.extInfo || {};
   const widget = event.data.widgetNo;
 
+  // Push to GA4
   fireGA4("deeda_event", {
     deeda_event_name: name,
     deeda_event_type: type,
@@ -50,8 +50,9 @@ window.addEventListener("message", function(event) {
     timestamp: Date.now()
   });
 
+  // ---- Event Routing (Meta Pixel) ---- //
 
-  // --- EVENT ROUTING ---
+  // INITIATE CHECKOUT → when user enters personal info
   if (name === "enter_personal") {
     safeFbq("InitiateCheckout", {
       step: name,
@@ -59,6 +60,7 @@ window.addEventListener("message", function(event) {
     });
   }
 
+  // ADD TO CART → when user selects an amount
   if (name === "select_amount") {
     safeFbq("AddToCart", {
       step: name,
@@ -67,6 +69,7 @@ window.addEventListener("message", function(event) {
     });
   }
 
+  // PURCHASE → when donation completes
   if (name === "payment_success") {
     safeFbq("Purchase", {
       value: payload.amount || 0,
