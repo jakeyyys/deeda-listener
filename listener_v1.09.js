@@ -143,21 +143,3 @@ window.addEventListener("message", function (event) {
     safeFbqCustom(META_SHADOW_CUSTOM_EVENT, conversionPayload);
   }
 });
-
-// =====================================================
-// ⛑️ TEST HOOK — manual only (remove after verification)
-// =====================================================
-window._deeda_testPurchase = function () {
-  console.log("⛑️🧪 MANUAL TEST: Purchase + Donate firing");
-
-  const testPayload = {
-    value: 1,
-    currency: "SGD",
-    transaction_id: "TEST_" + Date.now(),
-    widgetType: "test"
-  };
-
-  // Simulate real conversion path
-  safeFbqStandard(META_PRIMARY_STANDARD_EVENT, testPayload);
-  safeFbqCustom(META_SHADOW_CUSTOM_EVENT, testPayload);
-};
