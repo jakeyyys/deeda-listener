@@ -92,7 +92,6 @@ window.addEventListener("message", function (event) {
       transaction_id: payload.transactionId || ""
     });
   }
-});
 
   // -----------------------------
   // META: DONATE
