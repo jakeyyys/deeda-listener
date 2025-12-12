@@ -93,3 +93,16 @@ window.addEventListener("message", function (event) {
     });
   }
 });
+
+  // -----------------------------
+  // META: DONATE
+  // (embed only, conversion)
+  // -----------------------------
+  if (name === "complete" && widgetType === "embed") {
+    safeFbq("Donate", {
+      value: payload.amount || 0,
+      currency: payload.currency || "SGD",
+      transaction_id: payload.transactionId || ""
+    });
+  }
+});
