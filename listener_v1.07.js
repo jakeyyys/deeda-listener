@@ -92,9 +92,10 @@ window.addEventListener("message", function (event) {
 
   const isEmbed = widgetType === "embed";
   const isWidget = widgetType === "widget";
+  const isDeedaSurface = isEmbed || (TRACK_WIDGET && isWidget);
 
-  if (!isEmbed && !TRACK_WIDGET) {
-    console.log("⛑️⚠️ DeeDa event ignored (widget tracking disabled)");
+  if (!isDeedaSurface) {
+    console.log("⛑️⚠️ DeeDa event ignored (surface filtered)");
     return;
   }
 
@@ -114,28 +115,31 @@ window.addEventListener("message", function (event) {
 
   // --------------------------------------------------
   // META — InitiateCheckout (intent)
+  // embed + widget
   // --------------------------------------------------
-  if (name === "enter_personal" && isEmbed) {
+  if (name === "enter_personal") {
     safeFbqStandard("InitiateCheckout", {
       source: "deeda",
-      widgetType: "embed"
+      widgetType: widgetType
     });
   }
 
   // --------------------------------------------------
-  // META — Conversion (embed only)
+  // META — Conversion (completion)
+  // embed + widget
   // --------------------------------------------------
-  if (name === "complete" && isEmbed) {
+  if (name === "complete") {
     const conversionPayload = {
       value: payload.amount || 0,
       currency: payload.currency || "SGD",
-      transaction_id: payload.transactionId || ""
+      transaction_id: payload.transactionId || "",
+      widgetType: widgetType
     };
 
     // PRIMARY optimisation event (STANDARD)
     safeFbqStandard(META_PRIMARY_STANDARD_EVENT, conversionPayload);
 
-    // SHADOW event (CUSTOM ONLY)
+    // SHADOW tracking event (CUSTOM ONLY)
     safeFbqCustom(META_SHADOW_CUSTOM_EVENT, conversionPayload);
   }
 });
