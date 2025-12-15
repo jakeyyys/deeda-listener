@@ -76,6 +76,22 @@ function fireGA4(eventName, params) {
 }
 
 // =====================================================
+// Attribution helpers (UTMs + Meta)
+// =====================================================
+const urlParams = new URLSearchParams(window.location.search);
+
+function getAttributionParams() {
+  return {
+    utm_source: urlParams.get("utm_source"),
+    utm_medium: urlParams.get("utm_medium"),
+    utm_campaign: urlParams.get("utm_campaign"),
+    utm_content: urlParams.get("utm_content"),
+    utm_term: urlParams.get("utm_term"),
+    fbclid: urlParams.get("fbclid")
+  };
+}
+
+// =====================================================
 // MAIN DeeDa LISTENER
 // =====================================================
 window.addEventListener("message", function (event) {
@@ -103,14 +119,16 @@ window.addEventListener("message", function (event) {
   // GA4 — full-fidelity logging (always)
   // --------------------------------------------------
   fireGA4("deeda_event", {
+    ...getAttributionParams(),   // 👈 THIS IS THE KEY ADDITION
+  
     deeda_event_name: name,
     deeda_event_type: type,
     widgetType,
     widgetNo,
+  
     value: payload.amount || null,
     currency: payload.currency || "SGD",
-    transaction_id: payload.transactionId || null,
-    timestamp: Date.now()
+    transaction_id: payload.transactionId || null
   });
 
   // --------------------------------------------------
@@ -121,6 +139,28 @@ window.addEventListener("message", function (event) {
     safeFbqStandard("InitiateCheckout", {
       source: "deeda",
       widgetType: widgetType
+    });
+  }
+
+  // --------------------------------------------------
+  // GA4 — semantic funnel events
+  // --------------------------------------------------
+  if (name === "enter_personal") {
+    fireGA4("form_view", {
+      ...getAttributionParams(),
+      widgetType,
+      widgetNo
+    });
+  }
+  
+  if (name === "complete") {
+    fireGA4("donation_complete", {
+      ...getAttributionParams(),
+      value: payload.amount || 0,
+      currency: payload.currency || "SGD",
+      transaction_id: payload.transactionId || null,
+      widgetType,
+      widgetNo
     });
   }
 
