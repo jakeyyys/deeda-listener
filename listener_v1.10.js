@@ -119,7 +119,7 @@ window.addEventListener("message", function (event) {
   // GA4 — full-fidelity logging (always)
   // --------------------------------------------------
   fireGA4("deeda_event", {
-    ...getAttributionParams(),   // 👈 THIS IS THE KEY ADDITION
+    ...getAttributionParams(),
   
     deeda_event_name: name,
     deeda_event_type: type,
